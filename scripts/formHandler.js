@@ -15,6 +15,7 @@ export function getFormData() {
     usePhpProxy: document.getElementById("usePhpProxy").checked,
     onlyUnabridged: document.getElementById("filterUnabridged").checked,
     includeSubSeries: document.getElementById("includeSubSeries").checked,
+    showAllSeries: document.getElementById("showAllSeries").checked,
     ignoreMultiBooks: document.getElementById("ignoreMultiBooks").checked,
     ignoreNoPositionBooks: document.getElementById("ignoreNoPositionBooks").checked,
     ignoreSubPositionBooks: document.getElementById("ignoreSubPositionBooks").checked,

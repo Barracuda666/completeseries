@@ -62,6 +62,28 @@ document.addEventListener("DOMContentLoaded", async () => {
   const libraryList = document.getElementById("availableLibraries");
   const settingsLibraries = document.getElementById("availableLibrariesSettings");
 
+  // --- Persistent Login Logic ---
+  const savedUrl = localStorage.getItem("completeseries_serverUrl");
+  const savedUsername = localStorage.getItem("completeseries_username");
+  const savedApiKey = localStorage.getItem("completeseries_apiKey");
+  const savedUsePhp = localStorage.getItem("completeseries_usePhpProxy");
+
+  if (savedUrl) document.getElementById("serverUrl").value = savedUrl;
+  if (savedUsername) document.getElementById("username").value = savedUsername;
+
+  if (savedApiKey) {
+    document.getElementById("apikeyinput").value = savedApiKey;
+    // If we have an API key, we likely want to use it
+    // But let's check if the user last used password login
+    if (localStorage.getItem("completeseries_useApiKey") === "true") {
+      document.getElementById("useApiKeyLogin").checked = true;
+    }
+  }
+
+  if (savedUsePhp === "true") {
+    document.getElementById("usePhpProxy").checked = true;
+  }
+
   if (!loginForm || !libraryForm || !libraryList) return;
 
   // --- Handle login form submission ---
@@ -71,6 +93,13 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     const formData = getFormData();
     if (!validateForm(formData)) return;
+
+    // Save credentials
+    localStorage.setItem("completeseries_serverUrl", formData.serverUrl);
+    localStorage.setItem("completeseries_username", formData.username);
+    localStorage.setItem("completeseries_apiKey", formData.apiKey);
+    localStorage.setItem("completeseries_usePhpProxy", formData.usePhpProxy);
+    localStorage.setItem("completeseries_useApiKey", formData.useApiKey);
 
     resetUserInterfaceAndStartLoadingProcess();
 

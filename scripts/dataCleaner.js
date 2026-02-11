@@ -325,7 +325,14 @@ function gateNotViable(context) {
  * @returns {any}
  */
 function gateAlreadyInLibrary(context) {
-  const { asin, libraryASINs, book, seriesContext } = context;
+  const { asin, libraryASINs, book, seriesContext, formData } = context;
+
+  // If "Show All Series" is enabled, we DO NOT skip existing books.
+  // We want them to appear in the list (as "found").
+  if (formData && formData.showAllSeries) {
+    return false;
+  }
+
   const alreadyInLibrary = libraryASINs.has(asin);
   if (alreadyInLibrary) {
     debugLogBookAlreadyInLibrary({ book, seriesContext, libraryASINs });

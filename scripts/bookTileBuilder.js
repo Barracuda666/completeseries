@@ -56,6 +56,29 @@ function renderBookTile(bookData, container, seriesTitle) {
   addSeriesImage(tileInner, bookData, bookTitle);
   addSeriesTitle(tileInner, bookTitle);
 
+  // Spotify Link
+  const spotifyLink = `https://open.spotify.com/search/${encodeURIComponent(bookTitle + " " + (bookData.authorName || ""))}`;
+  const spotifyBadge = document.createElement("div");
+  spotifyBadge.className = "spotify-badge";
+  spotifyBadge.title = "Search on Spotify";
+  tileInner.appendChild(spotifyBadge);
+
+  const spotifyAnchor = document.createElement("a");
+  spotifyAnchor.href = spotifyLink;
+  spotifyAnchor.target = "_blank";
+  spotifyAnchor.rel = "noopener noreferrer";
+  spotifyAnchor.style.display = "flex"; // Ensure icon centers
+
+  // SVG Icon for Spotify
+  const spotifyIcon = document.createElement("img");
+  // Using Wikipedia hosted SVG for reliability as user asked for it and we don't have local asset confirmed
+  spotifyIcon.src = "https://upload.wikimedia.org/wikipedia/commons/1/19/Spotify_logo_without_text.svg";
+  spotifyIcon.style.width = "20px";
+  spotifyIcon.style.height = "20px";
+
+  spotifyAnchor.appendChild(spotifyIcon);
+  spotifyBadge.appendChild(spotifyAnchor);
+
   const eyeBadge = addEyeBadge(tileInner);
   addEyeIcon(eyeBadge, tileWrapper, hiddenItem, isHidden);
 }
