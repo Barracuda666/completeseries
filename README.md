@@ -1,142 +1,111 @@
-# 📘 Complete Your Collection 
- 
-### Every series brought together
+# 📘 Complete Your Collection - Audiobookshelf Edition
 
-**Identify missing audiobooks from the series you own**  
-_Designed for use with Audible series and AudiobookShelf._
+**Identify missing audiobooks from the series you own.**  
+_Designed for use with Audible series and Audiobookshelf._
 
 Live demo: [completeseries.lily-pad.uk](https://completeseries.lily-pad.uk)
 
-### ⚠️ Security & Server Use
+---
 
-By default this project uses JavaScript to authenticate with your AudiobookShelf server. To achieve this CORS acceptions must be added in AudiobookShelf. These settings are found in the Audiobook main settings page under "Allowed CORS Origins". You should add the domain you are accessing this project from, e.g. you are accessing it form https://completeseries.lily-pad.uk you should add that URL into the Allow CORS Origins text area. If you are hosting locally e.g. http://localhost:8080, then add that URL instead.
+## 🚀 Quick Start (Recommended for Local Audiobookshelf)
 
-Potential issues with CORS; you can not access an HTTP URL from an HTTPS URL. E.g. you are accessing this app from https://completeseries.lily-pad.uk and trying to connect to your AudiobookShelf server at http://audiobooks.example.com. This will always fail.
+The easiest way to run this application with full features (including automatic ASIN fixes and CORS handling) is using the included **Python Proxy**.
 
-If you are unable to connect using JavaScript this project can use PHP to make server-side requests, acting as a proxy to avoid CORS issues — specifically for authenticating with your AudiobookShelf server. This is a manually selectable option to increase security and avoid sending authentication information to a potentially unknown server.
+### Prerequisites
+- Python 3 installed on your system.
+- An Audiobookshelf server (local or remote).
 
-> ⚠️ **A word of caution:**  
-> In many PHP-based projects, usernames, passwords, or URLs _can_ be logged, either accidentally or intentionally.  
-> **That is _not_ the case here.**  
-> This project's PHP scripts do **not** store or log any credentials or personal data.
+### Installation & Usage
 
-You can inspect the full source code in this repository to verify that yourself. If you have any concerns about privacy or want full control, it’s strongly recommended to **self-host this project on your own server**.
+1.  **Download/Clone** this repository.
+2.  Open a terminal in the folder.
+3.  Make the start script executable (Linux/Mac):
+    ```bash
+    chmod +x start.sh
+    ```
+4.  **Start the application:**
+    ```bash
+    ./start.sh
+    ```
+5.  Open your browser at: [http://localhost:8000](http://localhost:8000)
 
 ---
 
-## 🚀 Overview
+## ✨ New Features
 
-**Complete My Series** helps you find audiobooks missing from your library's series collections. It integrates with your AudiobookShelf server and uses data from [audimeta.de](https://audimeta.de) to determine which titles you're missing from each Audible series.
+### 🔍 Auto-ASIN Discovery & Fix (Self-Healing)
+If your Audiobookshelf library has books without ASINs (Audible IDs), the app ordinarily can't check for missing parts.
+**Now:**
+- The app automatically **searches Audible** for missing ASINs based on Title/Author.
+- It **saves the found ASIN back to your Audiobookshelf server** automatically.
+- This ensures your library metadata gets better with every scan!
 
----
+### 🟢 Spotify Integration
+Missing a book?
+- Every missing book card now has a **Spotify icon**.
+- Click it to instantly search for that book on Spotify.
 
-## 🔧 Features
-
-- 🔐 Connects securely to your AudiobookShelf server
-- 🔎 Automatically identifies missing books in Audible series
-- 📚 Supports filtering for unique titles only (no duplicates)
-- 🎭 Hide unwanted books or series to reduce clutter
-- 💬 Full metadata view via modals, with direct links to Audible and download options
-- 🌍 Region support (UK, US, CA, AU, FR, DE, JP, IT, IN, ES, BR)
-- 🐞 View and download full debug reports to understand exactly why results were filtered
-- 📥 Download local cache to avoid being forced to request book metadata again
-
----
-
-## 🧪 How to Use
-
-1. **Enter your AudiobookShelf credentials**
-   - URL, username, and password are required to retrieve your audiobook and series list.
-
-1(b). **_Enter your AudiobookShelf credentials - API Key_**
-
-- If you use API keys instead of username and password enable this option in the advanced section.
-
-2. **Choose your settings**
-   - Default behavior: shows only unique, unabridged titles you're missing.
-   - Uncheck "Ignore matching titles" to allow duplicates with the same name.
-
-3. **Choose your library**
-   - If you have more than one library, pick the one(s) to search against and produce results.
-   - If you have a single library this screen will not be shown and the default library will be used.
-
-4. **Discover missing books**
-   - The app fetches your library, finds the first book in each series, then uses that to get the full series metadata from `audimeta.de`.
-   - If the series metadata has already been fetched from `audimeta.de` internal storage is used to improve performance and reduce API requests.
-
-5. **Review and buy**
-   - Click a series tile to see all missing titles.
-   - Click a book to see more info and a purchase link on Audible.
-
-6. **Hide content you don't want**
-   - Use the 👁️ icon to hide series or books permanently.
-   - Hidden items are tracked and can be managed from the sidebar (burger menu).
-
-7. **Apply new filters**
-   - Change the filters used and get an updated results page without logging in again
-   - Clear cached contents to force a new request
-
-8. **Download results**
-   - Download the results to CSV or Json format
-
-9. **Debug Modal**
-   - The Debug Modal provides a detailed, real-time view of your library’s data and applied filters, helping with troubleshooting and understanding the app’s logic.
-   - Group results
-   - Filter results
-   - Download results as JSON or CSV
+### 📜 "Show All Series" Mode
+Want to verify your complete series too?
+- Go to **Settings** (Gear Icon).
+- Check **"Show ALL series (including complete ones)"**.
+- This allows you to audit your entire library, not just the incomplete parts.
 
 ---
 
-## 🖼️ Screenshots
+## 🔧 Core Features
 
-| Feature                             | Screenshot                                                                                                                                     |
-| ----------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
-| 🏠 Home Page                        | ![HomePage](https://raw.githubusercontent.com/xFrieDSpuDx/completeseries/refs/heads/main/ExampleImages/HomepageFilterClosed.png)               |
-| 🏠 Home Page Filters                | ![HomePageFilters](https://raw.githubusercontent.com/xFrieDSpuDx/completeseries/refs/heads/main/ExampleImages/HomepageFilterOpen.png)          |
-| 🔑 Home Page API Key Login          | ![HomePageFilters](https://raw.githubusercontent.com/xFrieDSpuDx/completeseries/refs/heads/main/ExampleImages/LoginWithAPIKey.png)             |
-| 🔀 Home Page Filters                | ![HomePageFilters](https://raw.githubusercontent.com/xFrieDSpuDx/completeseries/refs/heads/main/ExampleImages/PHPProxyAndWarning.png)          |
-| 📚 Library Selection                | ![LibrarySelection](https://raw.githubusercontent.com/xFrieDSpuDx/completeseries/refs/heads/main/ExampleImages/LibrarySelect.png)              |
-| 📊 Results Page                     | ![ResultsPage](https://raw.githubusercontent.com/xFrieDSpuDx/completeseries/refs/heads/main/ExampleImages/ResultsPage.png)                     |
-| ⏳ Results Loading                  | ![ResultsPage](https://raw.githubusercontent.com/xFrieDSpuDx/completeseries/refs/heads/main/ExampleImages/ResultsLoadingPlaceholder.png)       |
-| 🧰 Filter Results Page              | ![FilterResultsPage](https://raw.githubusercontent.com/xFrieDSpuDx/completeseries/refs/heads/main/ExampleImages/FilterOptionsAfterResults.png) |
-| 📚 Book Modal                       | ![BooksModal](https://raw.githubusercontent.com/xFrieDSpuDx/completeseries/refs/heads/main/ExampleImages/BooksModal.png)                       |
-| 📖 Book Details                     | ![BookDetails](https://raw.githubusercontent.com/xFrieDSpuDx/completeseries/refs/heads/main/ExampleImages/BookDetails.png)                     |
-| 🙈 Hide Individual Book             | ![HideBooks](https://raw.githubusercontent.com/xFrieDSpuDx/completeseries/refs/heads/main/ExampleImages/HideBooks.png)                         |
-| 🚫 Hide Entire Series               | ![HideSeries](https://raw.githubusercontent.com/xFrieDSpuDx/completeseries/refs/heads/main/ExampleImages/HideSeries.png)                       |
-| 👁️ Hidden Books & Series Modal      | ![HiddenBooksAndSeries](https://raw.githubusercontent.com/xFrieDSpuDx/completeseries/refs/heads/main/ExampleImages/HiddenBooksAndSeries.png)   |
-| 🐞 Debug Modal (No Filters)         | ![DebugModalNoFilters](https://raw.githubusercontent.com/xFrieDSpuDx/completeseries/refs/heads/main/ExampleImages/Debug.png)                   |
-| 🐞 Debug Modal (Filters & Grouping) | ![DebugModalWithFilters](https://raw.githubusercontent.com/xFrieDSpuDx/completeseries/refs/heads/main/ExampleImages/DebugFilterGroup.png)      |
+- **Secure Connection**: Connects to your Audiobookshelf server using a local proxy to bypass CORS issues securely.
+- **Smart Filtering**: Automatically identifies missing books in Audible series.
+- **Privacy Focused**: Credentials are saved only in your browser's *Local Storage*. No data is sent to any third-party server except `audimeta.de` (for metadata) and your own Audiobookshelf.
+- **Region Support**: UK, US, CA, AU, FR, DE, JP, IT, IN, ES, BR.
+- **Export Data**: Download your missing book list as **CSV** or **JSON** for external use.
+- **Ignore/Hide**: Permanently hide books or series you don't care about.
 
 ---
 
-## 📦 Deployment
+## 🧪 Detailed Usage Guide
 
-You can host your own version or use the one at [https://completeseries.lily-pad.uk](https://completeseries.lily-pad.uk). The project is as client-side as possible, however older AudiobookShelf installs and certain setups rely on PHP to stop CORS issues. By default the application tries to use JavaScript but does give the option to fallback to using a PHP proxy if needed. The proxy option is found in the advanced section of the home page.
+1.  **Login**:
+    - Enter your Audiobookshelf URL (e.g., `http://192.168.1.50:13378`).
+    - Enter Username/Password OR use an API Key (Toggle in Advanced Settings).
+    - *Tip: If you use the Python Proxy (`./start.sh`), connection issues are rare.*
 
-This repository ships with a full, production-grade toolchain so you can build and host your own optimised bundle instead of running the raw dev files. The build process bundles and minifies JS/CSS, rewrites HTML to use content-hashed assets, and copies required `assets/` and optional `php/` proxy files into `dist/` for zero-config deployment. Linting (ESLint) and formatting (Prettier) configs are included to keep contributions consistent. See the commands below to install, build, preview, and lint your local clone.
+2.  **Select Library**:
+    - Choose the library you want to scan (e.g., "Audiobooks").
 
-#### 1) Install (Node 18+)
+3.  **Scan & Review**:
+    - The app will fetch your books and compare them with the official Audible series lists.
+    - **Missing books** appear in the main view.
+    - **Complete series** are hidden unless you enable "Show All Series".
 
-npm install # or: npm ci
+4.  **Fixing Metadata (Important!)**:
+    - If you see "0 Series Missing" but know you have gaps, your books might lack ASINs.
+    - Just run the scan! The app will now **auto-detect** and **auto-fix** these missing ASINs in the background.
 
-#### 2) Build a production bundle → dist/
+5.  **Exporting**:
+    - Use the menu (top left) to **Export Missing (CSV/JSON)**.
 
-npm run build
+---
 
-#### 3) Preview the built site locally
+## 🛠️ Advanced Development (Building from Source)
 
-npm run serve:all
+If you want to modify the frontend code or build the production bundle yourself (requires Node.js 18+):
 
-#### (Optional) Rebuild on changes during development
-
-npm run watch
-
-#### (Optional) Lint & auto-fix
-
-npm run lint && npm run lint:fix && npm run format
+1.  **Install Dependencies**:
+    ```bash
+    npm install
+    ```
+2.  **Build Production Bundle (`dist/`)**:
+    ```bash
+    npm run build
+    ```
+3.  **Run Development Server**:
+    ```bash
+    npm run serve:all
+    ```
 
 ---
 
 ## 📄 License
-
 MIT – Use it, improve it, share it.
