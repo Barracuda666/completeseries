@@ -20,8 +20,42 @@ import {
   debugLogIgnoreSameSeriesPositionExisting,
   debugLogIgnoreTitleSubtitleMissing,
   debugLogIgnoreSameSeriesPositionMissing,
+  debugLogSeriesMismatch, // Imported
   startDebugSession,
 } from "./debug.js";
+
+// ... (rest of imports)
+
+function hasSameSeriesPosition(bookSeriesArray, existingContent) {
+  for (const existingBook of existingContent) {
+    const existingPos = normaliseSeriesPosition(existingBook.seriesPosition);
+    const existingSeries = normaliseText(existingBook.series);
+
+    for (const seriesEntry of bookSeriesArray) {
+      const entryPos = normaliseSeriesPosition(seriesEntry.position);
+      const entrySeries = normaliseText(seriesEntry.name);
+
+      if (existingSeries === entrySeries && existingPos !== entryPos) {
+        debugLogSeriesMismatch({
+          existingItem: existingBook,
+          candidate: seriesEntry,
+          existingPos,
+          entryPos,
+          existingSeries,
+          entrySeries
+        });
+      }
+
+      if (
+        existingPos === entryPos &&
+        existingSeries === entrySeries
+      )
+        return true;
+    }
+  }
+
+  return false; // No match found
+}
 
 /**
  * @typedef {Object} BookRecord
@@ -924,6 +958,27 @@ function doesTitleSubtileMatchMissingExists(title, subtitle, bookSeriesArray, mi
 }
 
 /**
+ * Normalises a series position string for comparison.
+ * - Removes leading zeros: "01" -> "1"
+ * - Handles simple numeric strings.
+ * - Leaves non-numeric strings mostly as-is, but trimmed.
+ *
+ * @param {string|number|null} position
+ * @returns {string}
+ */
+function normaliseSeriesPosition(position) {
+  if (position == null) return "";
+  const s = String(position).trim();
+
+  // validation: matches purely numeric string (with optional decimal), possibly with leading zeros
+  // e.g. "01", "005.5", "10"
+  if (/^0*\d+(\.\d+)?$/.test(s)) {
+    return parseFloat(s).toString();
+  }
+  return s;
+}
+
+/**
  * Determines whether a book has the same title and subtitle as an existing book in the library.
  *
  * @param {Array<Object>} bookSeriesArray - An array of series objects associated with a book.
@@ -939,10 +994,16 @@ function doesTitleSubtileMatchMissingExists(title, subtitle, bookSeriesArray, mi
  */
 function hasSameSeriesPosition(bookSeriesArray, existingContent) {
   for (const existingBook of existingContent) {
+    const existingPos = normaliseSeriesPosition(existingBook.seriesPosition);
+    const existingSeries = normaliseText(existingBook.series);
+
     for (const seriesEntry of bookSeriesArray) {
+      const entryPos = normaliseSeriesPosition(seriesEntry.position);
+      const entrySeries = normaliseText(seriesEntry.name);
+
       if (
-        existingBook.seriesPosition === seriesEntry.position &&
-        existingBook.series === seriesEntry.name
+        existingPos === entryPos &&
+        existingSeries === entrySeries
       )
         return true;
     }
@@ -968,10 +1029,16 @@ function hasSameSeriesPosition(bookSeriesArray, existingContent) {
 function hasSameSeriesPositionMissingExists(bookSeriesArray, missingBooks) {
   for (const existingMissingBook of missingBooks) {
     for (const seriesEntry of bookSeriesArray) {
+      const entryPos = normaliseSeriesPosition(seriesEntry.position);
+      const entrySeries = normaliseText(seriesEntry.name);
+
       for (const existingMissingBookSeries of existingMissingBook.series) {
+        const missingPos = normaliseSeriesPosition(existingMissingBookSeries.position);
+        const missingSeries = normaliseText(existingMissingBookSeries.name);
+
         if (
-          existingMissingBookSeries.position === seriesEntry.position &&
-          existingMissingBookSeries.name === seriesEntry.name
+          missingPos === entryPos &&
+          missingSeries === entrySeries
         )
           return true;
       }

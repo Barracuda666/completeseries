@@ -23,6 +23,7 @@ import {
   disableClickEventsOnLoad,
   enableClickEventsOnLoadEnd,
   libraryCheckboxWatcher,
+  toggleApiKeyLogin,
 } from "./interactions.js";
 import { emptyDivContent, addLabeledCheckbox } from "./elementFactory.js";
 
@@ -83,6 +84,10 @@ document.addEventListener("DOMContentLoaded", async () => {
   if (savedUsePhp === "true") {
     document.getElementById("usePhpProxy").checked = true;
   }
+
+  // Sync UI visibility based on restored checkbox state
+  const { toggleApiKeyLogin } = await import("./interactions.js");
+  toggleApiKeyLogin();
 
   if (!loginForm || !libraryForm || !libraryList) return;
 

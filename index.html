@@ -36,7 +36,7 @@
         autocomplete="url" />
       <div class="error-message" id="urlError"></div>
 
-      <div id="userPasswordInputContainer" class="menuHideable active">
+      <div id="userPasswordInputContainer" class="login-input-toggle active">
         <label for="username">Username</label>
         <input type="text" id="username" name="username" placeholder="Username" required autocomplete="username" />
         <div class="error-message" id="usernameError"></div>
@@ -46,7 +46,7 @@
           autocomplete="current-password" />
         <div class="error-message" id="passwordError"></div>
       </div>
-      <div id="apiKeyInputContainer" class="menuHideable">
+      <div id="apiKeyInputContainer" class="login-input-toggle">
         <label for="apikeyinput">API Key</label>
         <input type="text" id="apikeyinput" name="apikeyinput" placeholder="API Key" required />
         <div class="error-message" id="apikeyinputError"></div>
@@ -68,54 +68,46 @@
 
       <button type="submit">Login</button>
 
+      <div class="checkbox-row">
+        <input type="checkbox" id="useApiKeyLogin" />
+        <label for="useApiKeyLogin" class="label-checkbox">
+          Use API key login
+        </label>
+      </div>
+
       <details id="advancedSection" class="advanced">
-        <summary class="advanced__summary">
-          <span class="advanced__title">Advanced</span>
-          <svg class="advanced__chevron" width="16" height="16" viewBox="0 0 24 24" aria-hidden="true">
-            <path d="M6 9l6 6 6-6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
-              stroke-linejoin="round" />
-          </svg>
-        </summary>
+        <div class="checkbox-row advanced-checkbox-row">
+          <input type="checkbox" id="usePhpProxy" />
+          <label for="usePhpProxy" class="label-checkbox label-advanced">
+            Use PHP proxy to login to AudiobookShelf
+          </label>
+          <!-- Tooltip wrapper -->
+          <span class="tooltip" tabindex="0" aria-describedby="proxyWarningTip">
+            <!-- Warning icon -->
+            <svg class="tooltip__icon" viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M12 2L1 21h22L12 2z" fill="none" stroke="currentColor" stroke-width="2"
+                stroke-linejoin="round" />
+              <path d="M12 8v6" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+              <circle cx="12" cy="17" r="1.25" fill="currentColor" />
+            </svg>
 
-        <div class="advanced__content">
-          <div class="checkbox-row advanced-checkbox-row">
-            <input type="checkbox" id="useApiKeyLogin" />
-            <label for="useApiKeyLogin" class="label-checkbox label-advanced">
-              Use API key login
-            </label>
-          </div>
-          <div class="checkbox-row advanced-checkbox-row">
-            <input type="checkbox" id="usePhpProxy" />
-            <label for="usePhpProxy" class="label-checkbox label-advanced">
-              Use PHP proxy to login to AudiobookShelf
-            </label>
-            <!-- Tooltip wrapper -->
-            <span class="tooltip" tabindex="0" aria-describedby="proxyWarningTip">
-              <!-- Warning icon -->
-              <svg class="tooltip__icon" viewBox="0 0 24 24" aria-hidden="true">
-                <path d="M12 2L1 21h22L12 2z" fill="none" stroke="currentColor" stroke-width="2"
-                  stroke-linejoin="round" />
-                <path d="M12 8v6" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
-                <circle cx="12" cy="17" r="1.25" fill="currentColor" />
-              </svg>
-
-              <!-- Tooltip bubble -->
-              <span id="proxyWarningTip" role="tooltip" class="tooltip__bubble">
-                Only use a proxy you control or trust. A proxy can read usernames, passwords, and
-                tokens passed to it.
-              </span>
+            <!-- Tooltip bubble -->
+            <span id="proxyWarningTip" role="tooltip" class="tooltip__bubble">
+              Only use a proxy you control or trust. A proxy can read usernames, passwords, and
+              tokens passed to it.
             </span>
-          </div>
-          <label for="uploadLocalStorage" class="label-upload">Import LocalStorage</label>
-          <div class="upload-box" id="uploadBox">
-            <p id="uploadPlaceholder">
-              Click here or drag & drop a JSON file to update the local storage
-            </p>
-            <input type="file" id="uploadLocalStorage" class="input-upload" accept=".json" />
-          </div>
+          </span>
         </div>
-      </details>
-    </form>
+        <label for="uploadLocalStorage" class="label-upload">Import LocalStorage</label>
+        <div class="upload-box" id="uploadBox">
+          <p id="uploadPlaceholder">
+            Click here or drag & drop a JSON file to update the local storage
+          </p>
+          <input type="file" id="uploadLocalStorage" class="input-upload" accept=".json" />
+        </div>
+  </div>
+  </details>
+  </form>
   </div>
 
   <div id="library-form-container" class="form-container menuHideable">

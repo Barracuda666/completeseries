@@ -233,7 +233,11 @@ class ProxyHTTPRequestHandler(http.server.SimpleHTTPRequestHandler):
                         books = series.get('books', [])
                         
                         # DEBUG LOGGING
-                        print(f"DEBUG: Found series '{series_name}' with {len(books)} books.")
+                        if 'Die Professorin' in series_name:
+                            print(f"DEBUG: Detailed dump for '{series_name}':")
+                            print(json.dumps(series, indent=2))
+                        else:
+                            print(f"DEBUG: Found series '{series_name}' with {len(books)} books.")
 
                         # Statistic counters for this batch
                         valid_asins = 0
@@ -279,6 +283,9 @@ class ProxyHTTPRequestHandler(http.server.SimpleHTTPRequestHandler):
                                 series_position = str(meta['sequence'])
                             elif '#' in book_series_name:
                                 series_position = book_series_name.split('#')[-1].strip()
+                            
+                            if 'Die Professorin' in series_name:
+                                print(f"DEBUG: Resolved position for '{series_name}' book '{meta.get('title')}': '{series_position}'")
                             
                             series_all_asin.append({
                                 "series": series_name,

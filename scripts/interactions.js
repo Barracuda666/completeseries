@@ -397,12 +397,30 @@ export function toggleApiKeyLogin() {
   const userPassInput = document.getElementById("userPasswordInputContainer");
   const apiKeyInput = document.getElementById("apiKeyInputContainer");
 
+  /**
+   * Helper to enable/disable all inputs within a container.
+   * Browsers will skip validation for disabled required fields.
+   * @param {HTMLElement} container
+   * @param {boolean} disabled
+   */
+  const setInputsDisabled = (container, disabled) => {
+    container.querySelectorAll("input").forEach((input) => {
+      input.disabled = disabled;
+    });
+  };
+
   if (isApiKeyLoginChecked) {
-    userPassInput.classList.remove("active");
-    apiKeyInput.classList.add("active");
+    userPassInput.style.display = "none";
+    setInputsDisabled(userPassInput, true);
+
+    apiKeyInput.style.display = "block";
+    setInputsDisabled(apiKeyInput, false);
   } else {
-    userPassInput.classList.add("active");
-    apiKeyInput.classList.remove("active");
+    userPassInput.style.display = "block";
+    setInputsDisabled(userPassInput, false);
+
+    apiKeyInput.style.display = "none";
+    setInputsDisabled(apiKeyInput, true);
   }
 }
 

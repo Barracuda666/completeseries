@@ -723,6 +723,57 @@ export function debugLogIgnoreTitleSubtitleExisting({
 }
 
 /**
+ * Log series position mismatches for debugging.
+ *
+ * @param {{
+ *  existingItem: any,
+ *  candidate: any,
+ *  existingPos: string,
+ *  entryPos: string,
+ *  existingSeries: string,
+ *  entrySeries: string
+ * }} params
+ * @returns {void}
+ */
+export function debugLogSeriesMismatch({
+  existingItem,
+  candidate,
+  existingPos,
+  entryPos,
+  existingSeries,
+  entrySeries,
+}) {
+  if (!isDebugEnabled()) return;
+
+  // Only log if series names match (approx) but positions don't
+  if (existingSeries !== entrySeries) return;
+
+  const descriptionText =
+    `Series match found ("${existingSeries}"), but positions differed: Local "${existingPos}" vs Candidate "${entryPos}".`;
+
+  const record = {
+    timestampIso: new Date().toISOString(),
+    check: "series-mismatch",
+    checkLabel: "Series Position Mismatch",
+    description: descriptionText,
+    outcome: "mismatch",
+    asin: existingItem?.asin ?? "N/A",
+    title: existingItem?.title ?? "N/A",
+    series: summariseBookSeries(existingItem),
+    details: {
+      existingSeries,
+      entrySeries,
+      existingPosRaw: existingItem?.seriesPosition,
+      entryPosRaw: candidate?.position,
+      existingPosNormalised: existingPos,
+      entryPosNormalised: entryPos,
+    },
+  };
+
+  pushDebugRecord(record);
+}
+
+/**
  * Ignore same series position when an existing library item already has it.
  *
  * @param {{
