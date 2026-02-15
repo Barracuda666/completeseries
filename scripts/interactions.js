@@ -145,7 +145,7 @@ export function initializeUIInteractions() {
 
   if (enableDebugChecks) enableDebugChecks.addEventListener("click", allowReloadForDebug);
 
-  if (useApiKeyLogin) useApiKeyLogin.addEventListener("click", toggleApiKeyLogin);
+  if (useApiKeyLogin) useApiKeyLogin.addEventListener("change", toggleApiKeyLogin);
 
   if (uploadLocalStorage) bindStorageUploadUI();
   // -------------------------
@@ -410,16 +410,30 @@ export function toggleApiKeyLogin() {
   };
 
   if (isApiKeyLoginChecked) {
-    userPassInput.style.display = "none";
+    // API Key Login ACTIVE
+    console.log("Switching to API Key Login (ID-based)");
+
+    // Hide User/Pass
+    userPassInput.classList.remove("visible");
+    userPassInput.classList.add("hidden");
     setInputsDisabled(userPassInput, true);
 
-    apiKeyInput.style.display = "block";
+    // Show API Key
+    apiKeyInput.classList.remove("hidden");
+    apiKeyInput.classList.add("visible");
     setInputsDisabled(apiKeyInput, false);
   } else {
-    userPassInput.style.display = "block";
+    // User/Pass Login ACTIVE
+    console.log("Switching to User/Pass Login (ID-based)");
+
+    // Show User/Pass
+    userPassInput.classList.remove("hidden");
+    userPassInput.classList.add("visible");
     setInputsDisabled(userPassInput, false);
 
-    apiKeyInput.style.display = "none";
+    // Hide API Key
+    apiKeyInput.classList.remove("visible");
+    apiKeyInput.classList.add("hidden");
     setInputsDisabled(apiKeyInput, true);
   }
 }

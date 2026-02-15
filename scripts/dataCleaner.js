@@ -26,36 +26,7 @@ import {
 
 // ... (rest of imports)
 
-function hasSameSeriesPosition(bookSeriesArray, existingContent) {
-  for (const existingBook of existingContent) {
-    const existingPos = normaliseSeriesPosition(existingBook.seriesPosition);
-    const existingSeries = normaliseText(existingBook.series);
 
-    for (const seriesEntry of bookSeriesArray) {
-      const entryPos = normaliseSeriesPosition(seriesEntry.position);
-      const entrySeries = normaliseText(seriesEntry.name);
-
-      if (existingSeries === entrySeries && existingPos !== entryPos) {
-        debugLogSeriesMismatch({
-          existingItem: existingBook,
-          candidate: seriesEntry,
-          existingPos,
-          entryPos,
-          existingSeries,
-          entrySeries
-        });
-      }
-
-      if (
-        existingPos === entryPos &&
-        existingSeries === entrySeries
-      )
-        return true;
-    }
-  }
-
-  return false; // No match found
-}
 
 /**
  * @typedef {Object} BookRecord
@@ -331,11 +302,19 @@ function gateCheck(optionEnabled, condition, debugFn, payloadBuilder) {
  * @returns {any}
  */
 function gateNotViable(context) {
-  const { book, seriesContext } = context;
+  const { book, seriesContext, libraryASINs } = context;
+
+  // CRITICAL FIX: If the book is already in our library, we MUST NOT hide it,
+  // even if Audible says it's unavailable or region-locked.
+  // The user owns it, so it is "viable" by definition.
+  if (libraryASINs && book.asin && libraryASINs.has(book.asin)) {
+    return false; // Do not skip
+  }
+
   const isViable = isBookViable(book);
   if (!isViable) {
     debugLogBookViability({ book, seriesContext });
-    return true;
+    return true; // Skip
   }
   return false;
 }
@@ -1080,7 +1059,34 @@ function doesBookExistInArray(missingBooks, bookAsin) {
 function isBookViable(bookMetadata) {
   const formData = getFormData();
 
-  return bookMetadata.isAvailable !== false && bookMetadata.region === formData.region;
+  // Basic viability checks
+  const isAvailable = bookMetadata.isAvailable !== false;
+  const regionMatch = bookMetadata.region === formData.region;
+  let isViable = isAvailable && regionMatch;
+
+  // OVERRIDE: If "Show ALL series" is checked, we want to see everything,
+  // even if it's not "viable" (e.g. not purchasable or wrong region).
+  // Also, if the book is ALREADY in the library, we should never hide it.
+
+  // We need to check if the book is in the library to override viability.
+  // However, isBookViable currently doesn't receive the full context of "existing library".
+  // But we can check formData.showAllSeries.
+
+  if (!isViable) {
+    // Log why it failed first
+    // console.log(`[Gate:Viable] Rejected '${bookMetadata.title}'. Avail=${isAvailable}, Region=${bookMetadata.region} vs Form=${formData.region}`);
+
+    // If user wants to see ALL series, we bypass the viability check for the purpose of *listing* the series.
+    // However, we might still want to flag it as "ignored" later if we were calculating missing books?
+    // No, "Show All" implies showing the series tile. If we reject here, the series tile is never created if all books are rejected.
+    if (formData.showAllSeries) {
+      return true;
+    }
+
+    console.log(`[Gate:Viable] Rejected '${bookMetadata.title}'. Avail=${isAvailable}, Region=${bookMetadata.region} vs Form=${formData.region}`);
+  }
+
+  return isViable;
 }
 
 /**

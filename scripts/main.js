@@ -1,5 +1,6 @@
 // main.js
 
+
 // Imports
 import { getFormData, validateLibraryForm, validateForm, clearErrors } from "./formHandler.js";
 import {
@@ -24,10 +25,10 @@ import {
   enableClickEventsOnLoadEnd,
   libraryCheckboxWatcher,
   toggleApiKeyLogin,
-} from "./interactions.js";
+} from "./interactions.js?v=3";
 import { emptyDivContent, addLabeledCheckbox } from "./elementFactory.js";
 
-import { bindDebugViewerControls } from "./interactions.js";
+import { bindDebugViewerControls } from "./interactions.js?v=3";
 import { initDebugModal } from "./debugView.js";
 import { isDebugEnabled, getDebugLogs } from "./debug.js";
 import {
@@ -47,6 +48,9 @@ export let selectedLibraries = {
 };
 export let libraryArrayObject = {};
 
+// Global state to prevent duplicate submissions
+let isLoginSubmitting = false;
+
 /**
  * Initializes core UI and form behavior after DOM is ready
  */
@@ -54,9 +58,21 @@ document.addEventListener("DOMContentLoaded", async () => {
   await ensureWorkingMemoryReady();
   // Set up UI event listeners and populate hidden series menu
   initializeUIInteractions();
+
+  // HOTFIX: Clear stale metadata if it lacks region info (prevents 0-results bug)
+  const staleCheck = localStorage.getItem("existingFirstBookASINs");
+  if (staleCheck && !staleCheck.includes('"region":')) {
+    console.log("Clearing stale metadata (missing region)...");
+    localStorage.removeItem("existingFirstBookASINs");
+    localStorage.removeItem("existingBookMetadata");
+  }
+
   populateHiddenItemsMenu();
   computeStoragePresence();
   bindDebugViewerControls();
+
+  // DEBUG: Prove JS is updated
+  // alert("Main JS v4 Loaded");
 
   const loginForm = document.getElementById("loginForm");
   const libraryForm = document.getElementById("libraryForm");
@@ -81,12 +97,19 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
   }
 
+  // Default to FALSE (Direct connection) to avoid server-side connectivity issues
+  // unless user explicitly saved it as true previously.
+  let initialUsePhp = false;
   if (savedUsePhp === "true") {
+    initialUsePhp = true;
     document.getElementById("usePhpProxy").checked = true;
+  } else {
+    document.getElementById("usePhpProxy").checked = false;
   }
 
+  console.log(`[Main] Initializing with Proxy=${initialUsePhp}, Region=${document.getElementById("region")?.value}`);
+
   // Sync UI visibility based on restored checkbox state
-  const { toggleApiKeyLogin } = await import("./interactions.js");
   toggleApiKeyLogin();
 
   if (!loginForm || !libraryForm || !libraryList) return;
@@ -94,10 +117,16 @@ document.addEventListener("DOMContentLoaded", async () => {
   // --- Handle login form submission ---
   loginForm.addEventListener("submit", async function (loginFormEvent) {
     loginFormEvent.preventDefault();
+    if (isLoginSubmitting) return; // Block duplicate submissions
+    isLoginSubmitting = true;
+
     clearErrors();
 
     const formData = getFormData();
-    if (!validateForm(formData)) return;
+    if (!validateForm(formData)) {
+      isLoginSubmitting = false;
+      return;
+    }
 
     // Save credentials
     localStorage.setItem("completeseries_serverUrl", formData.serverUrl);
@@ -116,6 +145,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
       if (!libraryArrayObject?.librariesList?.length) {
         errorHandler({ message: "No libraries found. Please check your AudiobookShelf setup." });
+        isLoginSubmitting = false;
         return;
       }
 
@@ -125,13 +155,15 @@ document.addEventListener("DOMContentLoaded", async () => {
 
       if (libraryArrayObject.librariesList.length === 1) {
         // Auto-process single-library users
-        fetchExistingLibraryData(formData, libraryArrayObject);
+        await fetchExistingLibraryData(formData, libraryArrayObject);
       } else {
         // Build UI checkboxes for each library
         populateLibraryCheckboxes(libraryArrayObject.librariesList, libraryList);
       }
     } catch (error) {
       errorHandler(error);
+    } finally {
+      isLoginSubmitting = false;
     }
   });
 
@@ -155,6 +187,10 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     fetchExistingLibraryData(formData, selectedLibraries);
   });
+
+  // --- Auto-Load Config from Server (Env Vars) ---
+  // Must be called AFTER listeners are attached to allow auto-submit
+  await loadServerConfig();
 });
 
 /**
@@ -173,6 +209,10 @@ export async function fetchExistingLibraryData(formData, selectedLibraries) {
 
   try {
     setMessage("Fetching libraries and series...");
+
+    console.log(`[Main] Scanning ${selectedLibraries.librariesList?.length} libraries:`,
+      selectedLibraries.librariesList?.map(l => l.name)
+    );
 
     // Fetch user's existing library data
     existingContent = await collectExistingSeriesFromAudiobookShelf(formData, selectedLibraries);
@@ -366,4 +406,93 @@ function populateDebugViewerIfResultsExist() {
   // Initialize the modal and show related UI controls.
   initDebugModal();
   showDebugButtons();
+}
+
+/**
+ * Fetches configuration from the server (environment variables).
+ * Auto-fills and locks login fields if credentials are provided by the backend.
+ */
+async function loadServerConfig() {
+  try {
+    const response = await fetch("/api/config");
+    if (!response.ok) {
+      console.warn("API Config endpoint failed");
+      return;
+    }
+
+    const config = await response.json();
+    const { serverUrl, apiToken, region } = config; // Destructure region
+
+    if (serverUrl || apiToken || region) {
+      console.log("Applying server-side configuration...");
+
+      const urlInput = document.getElementById("serverUrl");
+      const apiKeyInput = document.getElementById("apikeyinput");
+      const useApiKeyCheckbox = document.getElementById("useApiKeyLogin");
+      const regionSelect = document.getElementById("audibleRegion"); // Get region dropdown
+
+      if (serverUrl) {
+        urlInput.value = serverUrl;
+        urlInput.readOnly = true;
+        urlInput.title = "Managed by server environment";
+        urlInput.classList.add("locked-input");
+      }
+
+      if (apiToken) {
+        apiKeyInput.value = apiToken;
+        apiKeyInput.readOnly = true;
+        apiKeyInput.title = "Managed by server environment";
+        apiKeyInput.classList.add("locked-input");
+
+        // Force switch to API Key mode
+        useApiKeyCheckbox.checked = true;
+        toggleApiKeyLogin();
+        // Disable the toggle so user can't switch back to password easily (optional but cleaner)
+        // useApiKeyCheckbox.disabled = true;
+      }
+
+      // Apply Region if provided
+      if (region) {
+        if (regionSelect) {
+          // 1. Try matching by value directly (e.g. "de", "us")
+          let matchedOption = Array.from(regionSelect.options).find(opt => opt.value.toLowerCase() === region.toLowerCase());
+
+          // 2. If not found, try matching by text content (e.g. "Germany", "United States")
+          if (!matchedOption) {
+            matchedOption = Array.from(regionSelect.options).find(opt => opt.text.toLowerCase() === region.toLowerCase());
+          }
+
+          if (matchedOption) {
+            regionSelect.value = matchedOption.value;
+            regionSelect.classList.add("locked-input");
+          } else {
+            console.warn(`Provided region '${region}' does not match any known region options.`);
+          }
+        }
+      }
+
+      // If we have both, auto-submit the form
+      if (serverUrl && apiToken) {
+        setMessage("Auto-logging in with environment configuration...");
+        const loginForm = document.getElementById("loginForm");
+        // Form stays hidden. We submit it programmatically.
+        // Small delay to ensure UI updates are rendered and form is ready
+        setTimeout(() => {
+          if (loginForm) loginForm.requestSubmit();
+        }, 100);
+      } else {
+        setMessage("Configuration loaded from environment.");
+        // Partial config or just default: show the form now
+        document.getElementById("loginForm").style.display = "block";
+      }
+    } else {
+      // No config at all: show form
+      document.getElementById("loginForm").style.display = "block";
+    }
+  } catch (error) {
+    console.warn("Failed to load server config:", error);
+    // Error case: show form so user can at least try manual login
+    document.getElementById("loginForm").style.display = "block";
+    alert("Error loading config: " + error.message);
+  }
 }

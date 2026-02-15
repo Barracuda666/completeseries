@@ -34,6 +34,108 @@ if (!$serverUrl || !$authToken || !$librariesList) {
 }
 
 // -----------------------------------------------------------------------------
+// Helper Functions for ASIN Logic
+// -----------------------------------------------------------------------------
+
+$asinCacheFile = __DIR__ . '/../asin_cache.json';
+$asinCache = [];
+if (file_exists($asinCacheFile)) {
+    $loaded = json_decode(file_get_contents($asinCacheFile), true);
+    if (is_array($loaded)) {
+        $asinCache = $loaded;
+    }
+}
+
+function saveASINCache()
+{
+    global $asinCache, $asinCacheFile;
+    // Attempt to save; suppress errors if permissions deny it
+    @file_put_contents($asinCacheFile, json_encode($asinCache));
+}
+
+function getASINFromAudible($title, $author)
+{
+    global $asinCache;
+
+    if (!$title)
+        return null;
+
+    $cacheKey = "$title|$author";
+    if (array_key_exists($cacheKey, $asinCache)) {
+        return $asinCache[$cacheKey];
+    }
+
+    $query = $title . " " . $author;
+    $encodedQuery = urlencode($query);
+    $url = "https://www.audible.de/search?keywords=$encodedQuery";
+
+    $ch = curl_init();
+    curl_setopt_array($ch, [
+        CURLOPT_URL => $url,
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_FOLLOWLOCATION => true,
+        CURLOPT_TIMEOUT => 5,
+        CURLOPT_USERAGENT => "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
+    ]);
+
+    // Polite delay
+    usleep(500000); // 0.5s
+
+    $html = curl_exec($ch);
+    $error = curl_error($ch);
+    curl_close($ch);
+
+    if ($html === false) {
+        // Network error
+        return null;
+    }
+
+    // Simple regex to find data-asin="B0..."
+    // Matches: data-asin="B00..."
+    if (preg_match('/data-asin="(B0[A-Z0-9]{8})"/', $html, $matches)) {
+        $asin = $matches[1];
+        $asinCache[$cacheKey] = $asin;
+        saveASINCache();
+        return $asin;
+    }
+    else {
+        $asinCache[$cacheKey] = null; // Cache failure too
+        return null;
+    }
+}
+
+function updateASINInABS($serverUrl, $token, $itemId, $asin)
+{
+    $url = "$serverUrl/api/items/$itemId/media";
+    $data = [
+        "metadata" => [
+            "asin" => $asin
+        ]
+    ];
+    $jsonData = json_encode($data);
+
+    $ch = curl_init($url);
+    curl_setopt_array($ch, [
+        CURLOPT_CUSTOMREQUEST => "PATCH",
+        CURLOPT_POSTFIELDS => $jsonData,
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_HTTPHEADER => [
+            "Authorization: Bearer $token",
+            "Content-Type: application/json",
+            "Content-Length: " . strlen($jsonData)
+        ],
+        CURLOPT_TIMEOUT => 5
+    ]);
+
+    $response = curl_exec($ch);
+    $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    curl_close($ch);
+
+    // 200-299 success
+    return ($httpCode >= 200 && $httpCode < 300);
+}
+
+// -----------------------------------------------------------------------------
 // Step 2: Fetch all series with pagination
 // -----------------------------------------------------------------------------
 
@@ -44,7 +146,8 @@ $limit = 20;
 
 foreach ($librariesList as $library) {
     $libraryId = $library["id"] ?? null;
-    if (!$libraryId) continue;
+    if (!$libraryId)
+        continue;
 
     $page = 0;
     $totalSeriesCount = null;
@@ -83,6 +186,37 @@ foreach ($librariesList as $library) {
             $seriesName = $series["name"] ?? "Unknown Series";
             $books = $series["books"] ?? [];
 
+            // -----------------------------------------------------------------
+            // ASIN Fix / Write-back logic for all books in this series
+            // -----------------------------------------------------------------
+            foreach ($books as &$bookRef) {
+                // Using reference &$bookRef so we can update it if needed 
+                // (though we mainly need to update $meta for local use)
+
+                $meta = $bookRef["media"]["metadata"] ?? [];
+                $asin = $meta["asin"] ?? null;
+                $title = $meta["title"] ?? "";
+                $author = $meta["authorName"] ?? "";
+                $itemId = $bookRef["id"] ?? null;
+
+                if (!$asin && $title) {
+                    // Try to find ASIN
+                    $fetchedAsin = getASINFromAudible($title, $author);
+                    if ($fetchedAsin) {
+                        $asin = $fetchedAsin;
+                        // Update local object for response
+                        $bookRef["media"]["metadata"]["asin"] = $asin;
+
+                        // Write back to ABS
+                        if ($itemId) {
+                            updateASINInABS($serverUrl, $authToken, $itemId, $asin);
+                        }
+                    }
+                }
+            }
+            unset($bookRef); // break reference
+
+            // Now process for response (using potentially updated ASINs)
             if (!empty($books)) {
                 $firstMeta = $books[0]["media"]["metadata"] ?? [];
                 $seriesFirstASIN[] = [

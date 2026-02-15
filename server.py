@@ -13,6 +13,25 @@ from urllib.error import URLError
 asin_cache_file = "asin_cache.json"
 asin_cache = {}
 
+def load_dotenv():
+    """Manually load .env file into os.environ to avoid dependencies"""
+    env_path = ".env"
+    if os.path.exists(env_path):
+        print(f"Loading environment from {env_path}")
+        with open(env_path, "r") as f:
+            for line in f:
+                line = line.strip()
+                if not line or line.startswith("#") or "=" not in line:
+                    continue
+                key, value = line.split("=", 1)
+                # handle quotes
+                if (value.startswith('"') and value.endswith('"')) or (value.startswith("'") and value.endswith("'")):
+                    value = value[1:-1]
+                os.environ[key.strip()] = value.strip()
+
+# Load env immediately
+load_dotenv()
+
 if os.path.exists(asin_cache_file):
     try:
         with open(asin_cache_file, 'r') as f:
@@ -118,6 +137,14 @@ class ProxyHTTPRequestHandler(http.server.SimpleHTTPRequestHandler):
             self.handle_existing_series_fetcher()
         else:
             self.send_error(404, "Not Found")
+            
+    def do_GET(self):
+        # Serve static files or handle GET API endpoints
+        if self.path == '/api/config':
+            self.handle_get_config()
+        else:
+            # Fallback to SimpleHTTPRequestHandler's default behavior for static files
+            super().do_GET()
 
     def _read_json_body(self):
         content_length = int(self.headers.get('Content-Length', 0))
@@ -135,6 +162,23 @@ class ProxyHTTPRequestHandler(http.server.SimpleHTTPRequestHandler):
         if details:
             response["details"] = details
         self._send_json_response(response, status)
+
+    def handle_get_config(self):
+        """
+        Serves public configuration from environment variables.
+        ONLY safe variables are exposed.
+        """
+        try:
+            config = {
+                "serverUrl": os.environ.get("ABS_URI", ""),
+                "apiToken": os.environ.get("ABS_TOKEN", ""),
+                "region": os.environ.get("ABS_REGION", "")
+            }
+            # Only return keys that have values
+            response = {k: v for k, v in config.items() if v}
+            self._send_json_response(response)
+        except Exception as e:
+            self._send_error_response(f"Internal server error: {str(e)}", status=500)
 
     def handle_get_libraries(self):
         try:
@@ -158,7 +202,7 @@ class ProxyHTTPRequestHandler(http.server.SimpleHTTPRequestHandler):
                 req = urllib.request.Request(login_url, data=login_payload, headers={'Content-Type': 'application/json'})
                 
                 try:
-                    with urllib.request.urlopen(req) as response:
+                    with urllib.request.urlopen(req, timeout=10) as response:
                         login_data = json.load(response)
                         auth_token = login_data.get('user', {}).get('token')
                 except urllib.error.HTTPError as e:
@@ -174,7 +218,7 @@ class ProxyHTTPRequestHandler(http.server.SimpleHTTPRequestHandler):
             req = urllib.request.Request(libraries_url, headers={'Authorization': f'Bearer {auth_token}'})
             
             try:
-                with urllib.request.urlopen(req) as response:
+                with urllib.request.urlopen(req, timeout=10) as response:
                     libs_data = json.load(response)
             except urllib.error.HTTPError as e:
                 return self._send_error_response("Failed to fetch libraries", status=e.code, details=e.read().decode('utf-8'))
@@ -190,6 +234,9 @@ class ProxyHTTPRequestHandler(http.server.SimpleHTTPRequestHandler):
             })
 
         except Exception as e:
+            print(f"DEBUG: Internal server error in handle_get_libraries: {str(e)}")
+            import traceback
+            traceback.print_exc()
             self._send_error_response(f"Internal server error: {str(e)}", status=500)
 
     def handle_existing_series_fetcher(self):
@@ -326,10 +373,14 @@ class ProxyHTTPRequestHandler(http.server.SimpleHTTPRequestHandler):
         except Exception as e:
             self._send_error_response(f"Internal server error: {str(e)}", status=500)
 
+class ReusableTCPServer(http.server.ThreadingHTTPServer):
+    allow_reuse_address = True
+    daemon_threads = True
+
 if __name__ == '__main__':
     port = 8000
     if len(sys.argv) > 1:
         port = int(sys.argv[1])
         
     print(f"Starting proxy server on port {port}")
-    http.server.HTTPServer(("", port), ProxyHTTPRequestHandler).serve_forever()
+    ReusableTCPServer(("", port), ProxyHTTPRequestHandler).serve_forever()

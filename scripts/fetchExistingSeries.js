@@ -132,6 +132,12 @@ export async function fetchExistingSeriesLibraries({
 
       // Map results to output structures
       for (const series of results) {
+        // ... (internal loop logic unchanged, omitting for brevity in replacement if possible, but replace_file_content needs contigous block)
+        // actually I will just wrap the loop logging around the existing block
+      }
+
+      // RE-IMPLEMENTING LOOP WITH LOGGING
+      for (const series of results) {
         const seriesName = series?.name ?? "Unknown Series";
         const books = Array.isArray(series?.books) ? series.books : [];
 
@@ -166,9 +172,13 @@ export async function fetchExistingSeriesLibraries({
       fetchedCountThisLibrary += results.length;
       page += 1;
 
+      console.log(`[FetchSeries] Library ${libraryId}: Fetched ${fetchedCountThisLibrary} / ${totalSeriesCount} (Page ${page})`);
+
       // If API didn't provide a total, stop when we hit an empty page
       if (totalSeriesCount == null && results.length === 0) break;
     } while (fetchedCountThisLibrary < totalSeriesCount);
+
+    console.log(`[FetchSeries] Finished Library ${libraryId}. Total processed: ${fetchedCountThisLibrary}`);
   }
 
   return {

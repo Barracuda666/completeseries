@@ -136,6 +136,17 @@ form button {
     background-color 0.3s;
 }
 
+#loginForm {
+  display: none;
+  /* Hidden by default until JS decides to show it */
+}
+
+.input-group {
+  margin-bottom: 15px;
+  position: relative;
+  /* For icon positioning */
+}
+
 .label-upload {
   margin-top: 1rem;
   margin-left: 2.5%;
@@ -582,12 +593,29 @@ label {
   display: none;
 }
 
-.login-input-toggle {
+/* Default States via ID for Specificity */
+#userPasswordInputContainer {
+  display: block;
+}
+
+#apiKeyInputContainer {
+  display: none;
+}
+
+/* Active State Overrides */
+#userPasswordInputContainer.hidden,
+#apiKeyInputContainer.hidden {
   display: none !important;
 }
 
-.login-input-toggle.active {
+#userPasswordInputContainer.visible,
+#apiKeyInputContainer.visible {
   display: block !important;
+}
+
+/* Legacy class cleanup (optional, keeping for safety) */
+.login-input-toggle {
+  display: none;
 }
 
 .spinner.active,

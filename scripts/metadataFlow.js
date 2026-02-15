@@ -60,6 +60,9 @@ export async function collectBookMetadata(existingSeries, audibleRegion, include
 
         if (!metadata?.series) continue;
 
+        // Inject region for consistency checks
+        metadata.region = audibleRegion;
+
         storeMetadataToLocalStorage(metadata, "existingFirstBookASINs");
       }
       // If metadata is not available, skip this book
@@ -124,9 +127,19 @@ export async function collectSeriesMetadata(seriesAsins, audibleRegion, existing
 
         if (!existingContent) continue;
 
+        // Inject region into each book in the series response
+        if (Array.isArray(audiMetaResponse)) {
+          audiMetaResponse.forEach(book => {
+            if (book && typeof book === 'object') {
+              book.region = audibleRegion;
+            }
+          });
+        }
+
         seriesMetadata = {
           seriesAsin,
           response: audiMetaResponse,
+          region: audibleRegion // Also on the series container
         };
 
         storeMetadataToLocalStorage(seriesMetadata, "existingBookMetadata");

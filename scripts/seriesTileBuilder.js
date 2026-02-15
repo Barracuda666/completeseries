@@ -24,6 +24,9 @@ import { toggleElementVisibilityFullEntity } from "./uiFeedback.js";
  */
 export async function renderSeriesAndBookTiles(groupedMissingBooks) {
   const outputContainer = getHTMLElement("seriesOutput");
+  // Prevent duplicate rendering by clearing content first
+  outputContainer.innerHTML = "";
+
 
   headerBuilder(outputContainer, groupedMissingBooks);
 
